@@ -8,6 +8,7 @@ public class PlayerController : MonoBehaviour
     [Header("Player Movement")]
     public float moveSpeed = 5.0f;
     public float jumpForce = 5.0f;
+    public float rotation = 10.0f;
 
     [Header("Camera Settings")]
     public Camera firstPersonCamera;
@@ -27,9 +28,11 @@ public class PlayerController : MonoBehaviour
     private float targetVericalRotaion = 0f;
     private float verticalRoatationSpeed = 240f;
 
-    private bool isFirstPerson = true;
+    public bool isFirstPerson = true;
     private bool isGrounded;
     private Rigidbody rb;
+    private float rotationSpeed;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -42,10 +45,16 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        HandleMovement();
+        
         HandleRotation();
         HandleJump();
         HandleCameraToggle();
+    }
+
+    private void FixedUpdate()
+    {
+        HandleMovement();
+
     }
 
     void SetActiveCamera()
@@ -73,12 +82,16 @@ public class PlayerController : MonoBehaviour
         targetVericalRotaion = Mathf.Clamp(targetVericalRotaion, yMinLimit, yMaxLimit);
         phi = Mathf.MoveTowards(phi, targetVericalRotaion, verticalRoatationSpeed * Time.deltaTime);
 
-        transform.rotation = Quaternion.Euler(0.0f, theta, 0.0f);
+        
 
         if (isFirstPerson)
         {
 
             firstPersonCamera.transform.localRotation = Quaternion.Euler(phi, 0.0f, 0.0f);
+
+
+            transform.rotation = Quaternion.Euler(0.0f, theta, 0.0f);
+
         }
         else
         {
@@ -110,6 +123,8 @@ public class PlayerController : MonoBehaviour
         float moveHorizontal = Input.GetAxis("Horizontal");
         float moveVertical = Input.GetAxis("Vertical");
 
+
+        Vector3 movement;
         if (!isFirstPerson)
         {
             Vector3 cameraForward = thirdPersonCamera.transform.forward;
@@ -120,18 +135,22 @@ public class PlayerController : MonoBehaviour
             cameraRight.y = 0.0f;
             cameraRight.Normalize();
 
-            Vector3 movement = cameraRight * moveHorizontal + cameraForward * moveVertical;
-            rb.MovePosition(rb.position + movement * moveSpeed * Time.deltaTime);
+            movement = cameraRight * moveHorizontal + cameraForward * moveVertical;
+           
 
         }
         else
         {
-            Vector3 movement = transform.right * moveHorizontal + transform.forward * moveVertical;
-            rb.MovePosition(rb.position + movement * moveSpeed * Time.deltaTime);
+             movement = transform.right * moveHorizontal + transform.forward * moveVertical;
+            
         }
 
-
-
+        if (movement.magnitude > 0.1f)
+        {
+            Quaternion toRotation = Quaternion.LookRotation(movement, Vector3.up);
+            transform.rotation = Quaternion.Slerp(transform.rotation, toRotation, rotationSpeed * Time.deltaTime);
+        }
+        rb.MovePosition(rb.position + movement * moveSpeed * Time.deltaTime);
     }
     private void OnCollisionStay(Collision collision)
     {
