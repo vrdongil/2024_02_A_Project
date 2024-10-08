@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
+using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
@@ -29,9 +31,17 @@ public class PlayerController : MonoBehaviour
     private float verticalRoatationSpeed = 240f;
 
     public bool isFirstPerson = true;
-    private bool isGrounded;
+    //private bool isGrounded;
     private Rigidbody rb;
     private float rotationSpeed;
+
+
+    public float fallingThreshold = -0.1f;
+
+    [Header("Ground Check Setting")]
+
+    public float groundCheckDistance = 0.3f;
+    public float slopedLimit = 45f;
 
     void Start()
     {
@@ -45,10 +55,14 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
         HandleRotation();
-        HandleJump();
+        
         HandleCameraToggle();
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            HandleJump();
+        }
     }
 
     private void FixedUpdate()
@@ -82,7 +96,7 @@ public class PlayerController : MonoBehaviour
         targetVericalRotaion = Mathf.Clamp(targetVericalRotaion, yMinLimit, yMaxLimit);
         phi = Mathf.MoveTowards(phi, targetVericalRotaion, verticalRoatationSpeed * Time.deltaTime);
 
-        
+
 
         if (isFirstPerson)
         {
@@ -108,17 +122,28 @@ public class PlayerController : MonoBehaviour
 
     }
 
-
-    void HandleJump()
+    void HandleCameraToggle()
     {
-        if (Input.GetKeyUp(KeyCode.Space) && isGrounded)
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+
+            isFirstPerson = !isFirstPerson;
+            SetActiveCamera();
+        }
+
+
+    }
+    public void HandleJump()
+    {
+
+        if (isGrounded())
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-            isGrounded = false;
         }
+
     }
 
-    void HandleMovement()
+    public void HandleMovement()
     {
         float moveHorizontal = Input.GetAxis("Horizontal");
         float moveVertical = Input.GetAxis("Vertical");
@@ -136,13 +161,13 @@ public class PlayerController : MonoBehaviour
             cameraRight.Normalize();
 
             movement = cameraRight * moveHorizontal + cameraForward * moveVertical;
-           
+
 
         }
         else
         {
-             movement = transform.right * moveHorizontal + transform.forward * moveVertical;
-            
+            movement = transform.right * moveHorizontal + transform.forward * moveVertical;
+
         }
 
         if (movement.magnitude > 0.1f)
@@ -152,20 +177,24 @@ public class PlayerController : MonoBehaviour
         }
         rb.MovePosition(rb.position + movement * moveSpeed * Time.deltaTime);
     }
-    private void OnCollisionStay(Collision collision)
+
+    public bool isGrounded()
     {
-        isGrounded = true;
+        return Physics.Raycast(transform.position, Vector3.down, 2.0f);
     }
 
-    void HandleCameraToggle()
+    public bool isFalling()
     {
-        if (Input.GetKeyDown(KeyCode.C))
-        {
-
-            isFirstPerson = !isFirstPerson;
-            SetActiveCamera();
-        }
-
-
+        return rb.velocity.y < fallingThreshold && !isGrounded();
     }
+
+    public float GetVerticalVelocity()
+    { 
+         return rb.velocity.y;
+    }
+
 }
+
+
+
+
