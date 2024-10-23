@@ -8,11 +8,13 @@ public abstract class PlayerState
 {
     protected PlayerStateMachine stateMachine;
     protected PlayerController playerController;
+    protected PlayerAnimationManager animationManager;
 
     public PlayerState(PlayerStateMachine stateMachine)
     {
         this.stateMachine = stateMachine;
         this.playerController = stateMachine.playerController;
+        this.animationManager = stateMachine.GetComponent<PlayerAnimationManager>();
     }
 
 
@@ -72,10 +74,14 @@ public class IdleState : PlayerState
 
 public class MoveingState : PlayerState
 {
+    public bool isRunning;
+
     public MoveingState(PlayerStateMachine stateMachine) : base(stateMachine) { }
 
     public override void Update()
     {
+        isRunning = Input.GetKey(KeyCode.LeftShift);
+
         CheckTransition();
     }
 

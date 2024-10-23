@@ -36,6 +36,12 @@ public class PlayerStateMachine : MonoBehaviour
 
     public void TransitionToState(PlayerState newState)
         {
+
+        if(currentState?.GetType() == newState.GetType())
+        {
+            return;
+        }
+
         currentState?.Exit();
         currentState = newState;
         currentState.Enter();
